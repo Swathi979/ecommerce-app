@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-// ─────────────────────────────────────────────
-// LOGIN COMPONENT
-// ─────────────────────────────────────────────
+const BASE_URL = "https://ecommerce-app-production-1ff5.up.railway.app";
+
 function Login({ setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-    const found = users.find(
-      (u) => u.email === email && u.password === password
-    );
-    if (found) {
-      localStorage.setItem("user", JSON.stringify(found));
-      setUser(found);
+  const handleLogin = async () => {
+    try {
+      const res = await axios.post(`${BASE_URL}/login`, { email, password });
+      localStorage.setItem("user", JSON.stringify(res.data));
+      setUser(res.data);
       setError("");
-    } else {
+    } catch (err) {
       setError("❌ Invalid credentials. Please register first.");
     }
   };
@@ -33,24 +30,24 @@ function Login({ setUser }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// REGISTER COMPONENT
-// ─────────────────────────────────────────────
 function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name || !email || !password) { setMsg("⚠️ All fields required"); return; }
-    const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-    if (users.find((u) => u.email === email)) { setMsg("⚠️ Email already registered"); return; }
-    const newUser = { name, email, password, isAdmin: email === "admin@store.com" };
-    users.push(newUser);
-    localStorage.setItem("registeredUsers", JSON.stringify(users));
-    setMsg("✅ Registered! You can now login.");
-    setName(""); setEmail(""); setPassword("");
+    try {
+      await axios.post(`${BASE_URL}/register`, {
+        name, email, password,
+        isAdmin: email === "admin@store.com",
+      });
+      setMsg("✅ Registered! You can now login.");
+      setName(""); setEmail(""); setPassword("");
+    } catch (err) {
+      setMsg("❌ " + (err.response?.data?.message || "Error occurred"));
+    }
   };
 
   return (
@@ -68,9 +65,6 @@ function Register() {
   );
 }
 
-// ─────────────────────────────────────────────
-// ADMIN COMPONENT
-// ─────────────────────────────────────────────
 function Admin({ products, setProducts, darkMode }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -81,26 +75,32 @@ function Admin({ products, setProducts, darkMode }) {
   const cardBg = darkMode ? "#1e1e2e" : "#fff";
   const textColor = darkMode ? "#e0e0e0" : "#333";
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!name || !price) { setMsg("⚠️ Name & Price required"); return; }
-    const newProduct = {
-      id: Date.now(),
-      name,
-      price: parseFloat(price),
-      image: image || "https://via.placeholder.com/200x150?text=Product",
-      description: description || "No description",
-    };
-    const updated = [...products, newProduct];
-    setProducts(updated);
-    localStorage.setItem("products", JSON.stringify(updated));
-    setMsg("✅ Product added!");
-    setName(""); setPrice(""); setImage(""); setDescription("");
+    try {
+      await axios.post(`${BASE_URL}/products`, {
+        name,
+        price: parseFloat(price),
+        image: image || "https://via.placeholder.com/200x150?text=Product",
+        description: description || "No description",
+      });
+      setMsg("✅ Product added!");
+      setName(""); setPrice(""); setImage(""); setDescription("");
+      const res = await axios.get(`${BASE_URL}/products`);
+      setProducts(res.data);
+    } catch (err) {
+      setMsg("❌ Backend error");
+    }
   };
 
-  const handleDelete = (id) => {
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    localStorage.setItem("products", JSON.stringify(updated));
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${BASE_URL}/products/${id}`);
+      const res = await axios.get(`${BASE_URL}/products`);
+      setProducts(res.data);
+    } catch (err) {
+      alert("❌ Delete failed");
+    }
   };
 
   return (
@@ -115,15 +115,14 @@ function Admin({ products, setProducts, darkMode }) {
         {msg && <p style={{ color: msg.includes("✅") ? "green" : "red", fontSize: 13 }}>{msg}</p>}
         <button style={btnGreen} onClick={handleAddProduct}>Add Product</button>
       </div>
-
       <h3 style={{ color: darkMode ? "#fff" : "#1a1a2e" }}>📋 All Products ({products.length})</h3>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 12 }}>
         {products.map((p) => (
-          <div key={p.id} style={{ ...productCard, background: cardBg, color: textColor, width: 180 }}>
+          <div key={p._id} style={{ ...productCard, background: cardBg, color: textColor, width: 180 }}>
             <img src={p.image} alt={p.name} style={{ width: "100%", height: 120, objectFit: "cover", borderRadius: 8 }} />
             <h4 style={{ margin: "8px 0 4px" }}>{p.name}</h4>
             <p style={{ margin: "0 0 8px", color: "#4caf50", fontWeight: "bold" }}>₹{p.price}</p>
-            <button onClick={() => handleDelete(p.id)} style={{ ...btnRed, width: "100%", padding: "6px" }}>🗑 Delete</button>
+            <button onClick={() => handleDelete(p._id)} style={{ ...btnRed, width: "100%", padding: "6px" }}>🗑 Delete</button>
           </div>
         ))}
       </div>
@@ -131,10 +130,7 @@ function Admin({ products, setProducts, darkMode }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// RAZORPAY DUMMY MODAL
-// ─────────────────────────────────────────────
-function RazorpayModal({ total, user, onSuccess, onClose }) {
+function RazorpayModal({ total, onSuccess, onClose }) {
   const [cardNum, setCardNum] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
@@ -142,9 +138,7 @@ function RazorpayModal({ total, user, onSuccess, onClose }) {
   const [method, setMethod] = useState("card");
 
   const handlePay = () => {
-    if (method === "card" && (!cardNum || !expiry || !cvv)) {
-      alert("⚠️ Fill all card details"); return;
-    }
+    if (method === "card" && (!cardNum || !expiry || !cvv)) { alert("⚠️ Fill all card details"); return; }
     setPaying(true);
     setTimeout(() => {
       setPaying(false);
@@ -162,7 +156,6 @@ function RazorpayModal({ total, user, onSuccess, onClose }) {
         <div style={{ padding: "20px" }}>
           <p style={{ margin: "0 0 4px", fontSize: 13, color: "#666" }}>Paying to <strong>My E-Commerce Store</strong></p>
           <h2 style={{ margin: "0 0 16px", color: "#1a1a2e" }}>₹{total}</h2>
-
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["card", "upi", "netbanking"].map((m) => (
               <button key={m} onClick={() => setMethod(m)} style={{ padding: "6px 14px", borderRadius: 20, border: "2px solid", borderColor: method === m ? "#3399cc" : "#ddd", background: method === m ? "#e8f4fd" : "#fff", color: method === m ? "#3399cc" : "#666", cursor: "pointer", fontSize: 13, fontWeight: method === m ? "bold" : "normal" }}>
@@ -170,7 +163,6 @@ function RazorpayModal({ total, user, onSuccess, onClose }) {
               </button>
             ))}
           </div>
-
           {method === "card" && (
             <>
               <input style={{ ...inputStyle, marginBottom: 10 }} placeholder="Card Number (16 digits)" maxLength={16} value={cardNum} onChange={(e) => setCardNum(e.target.value.replace(/\D/g, ""))} />
@@ -190,7 +182,6 @@ function RazorpayModal({ total, user, onSuccess, onClose }) {
               <option>Axis Bank</option>
             </select>
           )}
-
           <button onClick={handlePay} disabled={paying} style={{ ...btnBlue, width: "100%", padding: "12px", marginTop: 16, fontSize: 16, opacity: paying ? 0.7 : 1 }}>
             {paying ? "⏳ Processing..." : `Pay ₹${total}`}
           </button>
@@ -201,23 +192,10 @@ function RazorpayModal({ total, user, onSuccess, onClose }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// DEFAULT PRODUCTS
-// ─────────────────────────────────────────────
-const DEFAULT_PRODUCTS = [
-  { id: 1, name: "Shoes", price: 1200, description: "Comfortable everyday shoes", image: "https://5.imimg.com/data5/SELLER/Default/2023/7/323356025/UR/EQ/WS/192140499/safeimagekit-resized-img-3--500x500.png" },
-  { id: 2, name: "Running Shoes", price: 1800, description: "High performance running shoes", image: "https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg" },
-  { id: 3, name: "Casual Sneakers", price: 999, description: "Lightweight casual sneakers", image: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg" },
-  { id: 4, name: "Backpack", price: 2500, description: "Durable travel backpack", image: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg" },
-];
-
-// ─────────────────────────────────────────────
-// MAIN APP
-// ─────────────────────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
-  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -225,6 +203,18 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [showRazorpay, setShowRazorpay] = useState(false);
   const [authTab, setAuthTab] = useState("login");
+  const [loading, setLoading] = useState(true);
+
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/products`);
+      setProducts(res.data);
+    } catch (err) {
+      console.log("Backend error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -237,8 +227,7 @@ export default function App() {
     if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
     const savedOrders = localStorage.getItem("orders");
     if (savedOrders) setOrders(JSON.parse(savedOrders));
-    const savedProducts = localStorage.getItem("products");
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
+    fetchProducts();
   }, []);
 
   useEffect(() => { localStorage.setItem("cart", JSON.stringify(cart)); }, [cart]);
@@ -260,9 +249,9 @@ export default function App() {
   );
 
   const addToCart = (product) => {
-    const existing = cart.find((item) => item.id === product.id);
+    const existing = cart.find((item) => item._id === product._id);
     if (existing) {
-      setCart(cart.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+      setCart(cart.map((item) => item._id === product._id ? { ...item, quantity: item.quantity + 1 } : item));
     } else {
       setCart([...cart, { ...product, quantity: 1 }]);
     }
@@ -270,7 +259,7 @@ export default function App() {
   };
 
   const addToWishlist = (product) => {
-    if (!wishlist.find((item) => item.id === product.id)) {
+    if (!wishlist.find((item) => item._id === product._id)) {
       setWishlist([...wishlist, product]);
       alert("Added to Wishlist ❤️");
     } else {
@@ -278,17 +267,28 @@ export default function App() {
     }
   };
 
-  const removeWishlist = (id) => setWishlist(wishlist.filter((item) => item.id !== id));
-  const handleIncrement = (id) => setCart(cart.map((item) => item.id === id ? { ...item, quantity: item.quantity + 1 } : item));
-  const handleDecrement = (id) => setCart(cart.map((item) => item.id === id && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item));
-  const handleRemove = (id) => setCart(cart.filter((item) => item.id !== id));
+  const removeWishlist = (id) => setWishlist(wishlist.filter((item) => item._id !== id));
+  const handleIncrement = (id) => setCart(cart.map((item) => item._id === id ? { ...item, quantity: item.quantity + 1 } : item));
+  const handleDecrement = (id) => setCart(cart.map((item) => item._id === id && item.quantity > 1 ? { ...item, quantity: item.quantity - 1 } : item));
+  const handleRemove = (id) => setCart(cart.filter((item) => item._id !== id));
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleBuyNow = (paymentId = null) => {
-    const newOrder = { id: Date.now(), items: [...cart], total, date: new Date().toLocaleString(), paymentId: paymentId || "COD" };
-    setOrders([...orders, newOrder]);
+  const handleBuyNow = async (paymentId = null) => {
+    const newOrder = {
+      userId: user._id || user.email,
+      items: [...cart],
+      total,
+      date: new Date().toLocaleString(),
+      paymentId: paymentId || "COD",
+    };
+    try {
+      await axios.post(`${BASE_URL}/order`, newOrder);
+    } catch (err) {
+      console.log("Order save error:", err);
+    }
+    setOrders([...orders, { ...newOrder, id: Date.now() }]);
     setCart([]);
     setShowRazorpay(false);
     setPage("orders");
@@ -310,7 +310,6 @@ export default function App() {
   return (
     <div style={{ background: theme.bg, color: theme.text, minHeight: "100vh", padding: "20px", fontFamily: "'Segoe UI', sans-serif", transition: "0.3s" }}>
 
-      {/* TOP BAR */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 10 }}>
         <h1 style={{ margin: 0, fontSize: 26 }}>🛒 My E-Commerce Store</h1>
         <button onClick={() => setDarkMode(!darkMode)} style={{ ...btnOutline, borderColor: theme.border, color: theme.text, background: theme.card }}>
@@ -318,7 +317,6 @@ export default function App() {
         </button>
       </div>
 
-      {/* AUTH */}
       {!user ? (
         <div style={{ maxWidth: 420, margin: "0 auto" }}>
           <div style={{ display: "flex", marginBottom: 20, borderRadius: 12, overflow: "hidden", border: `2px solid ${theme.border}` }}>
@@ -329,7 +327,6 @@ export default function App() {
         </div>
       ) : (
         <>
-          {/* USER HEADER */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12, background: theme.card, padding: "14px 20px", borderRadius: 14, border: `1px solid ${theme.border}` }}>
             <div>
               <span style={{ fontWeight: "bold", fontSize: 16 }}>👋 Welcome, {user.name}!</span>
@@ -338,7 +335,6 @@ export default function App() {
             <button onClick={handleLogout} style={{ ...btnRed, padding: "8px 16px" }}>Logout</button>
           </div>
 
-          {/* NAV */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24, background: theme.card, padding: "10px 16px", borderRadius: 14, border: `1px solid ${theme.border}` }}>
             <NavItem icon="🏠" label="Home" target="products" />
             <NavItem icon="🛒" label="Cart" count={cartCount} target="cart" />
@@ -347,17 +343,22 @@ export default function App() {
             {user.isAdmin && <NavItem icon="🛠" label="Admin" target="admin" />}
           </div>
 
-          {/* PRODUCTS PAGE */}
           {page === "products" && (
             <>
               <h2 style={{ marginBottom: 16 }}>🛍️ Products</h2>
               <input type="text" placeholder="🔍 Search products..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...inputStyle, width: 260, marginBottom: 20, background: theme.input, color: theme.text, border: `1px solid ${theme.border}` }} />
-              {filteredProducts.length === 0 ? (
-                <p style={{ color: theme.subtext }}>No products found.</p>
+              {loading ? (
+                <p style={{ color: theme.subtext }}>⏳ Loading products...</p>
+              ) : filteredProducts.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 40, color: theme.subtext }}>
+                  <p style={{ fontSize: 40 }}>🛍️</p>
+                  <p>No products found.</p>
+                  {user.isAdmin && <button onClick={() => setPage("admin")} style={btnGreen}>➕ Add Products (Admin)</button>}
+                </div>
               ) : (
                 <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
                   {filteredProducts.map((product) => (
-                    <div key={product.id} style={{ ...productCard, background: theme.card, color: theme.text, border: `1px solid ${theme.border}` }}>
+                    <div key={product._id} style={{ ...productCard, background: theme.card, color: theme.text, border: `1px solid ${theme.border}` }}>
                       <img src={product.image} alt={product.name} style={{ width: "100%", height: 150, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />
                       <h3 style={{ margin: "0 0 4px" }}>{product.name}</h3>
                       <p style={{ margin: "0 0 4px", fontSize: 12, color: theme.subtext }}>{product.description}</p>
@@ -373,7 +374,6 @@ export default function App() {
             </>
           )}
 
-          {/* CART PAGE */}
           {page === "cart" && (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
@@ -389,20 +389,20 @@ export default function App() {
               ) : (
                 <>
                   {cart.map((item) => (
-                    <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: theme.card, border: `1px solid ${theme.border}`, padding: 16, marginBottom: 12, borderRadius: 12, flexWrap: "wrap", gap: 12 }}>
+                    <div key={item._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: theme.card, border: `1px solid ${theme.border}`, padding: 16, marginBottom: 12, borderRadius: 12, flexWrap: "wrap", gap: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                         <img src={item.image} alt={item.name} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 10 }} />
                         <div>
                           <h3 style={{ margin: "0 0 4px" }}>{item.name}</h3>
                           <p style={{ margin: 0, color: "#4caf50", fontWeight: "bold" }}>₹{item.price} × {item.quantity} = ₹{item.price * item.quantity}</p>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-                            <button onClick={() => handleDecrement(item.id)} style={qtyBtn}>−</button>
+                            <button onClick={() => handleDecrement(item._id)} style={qtyBtn}>−</button>
                             <span style={{ fontWeight: "bold", minWidth: 24, textAlign: "center" }}>{item.quantity}</span>
-                            <button onClick={() => handleIncrement(item.id)} style={qtyBtn}>+</button>
+                            <button onClick={() => handleIncrement(item._id)} style={qtyBtn}>+</button>
                           </div>
                         </div>
                       </div>
-                      <button onClick={() => handleRemove(item.id)} style={{ ...btnRed, padding: "8px 14px" }}>🗑 Remove</button>
+                      <button onClick={() => handleRemove(item._id)} style={{ ...btnRed, padding: "8px 14px" }}>🗑 Remove</button>
                     </div>
                   ))}
                   <div style={{ background: theme.card, border: `1px solid ${theme.border}`, padding: 20, borderRadius: 12, marginTop: 16 }}>
@@ -417,7 +417,6 @@ export default function App() {
             </>
           )}
 
-          {/* WISHLIST PAGE */}
           {page === "wishlist" && (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
@@ -432,13 +431,13 @@ export default function App() {
               ) : (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
                   {wishlist.map((item) => (
-                    <div key={item.id} style={{ ...productCard, background: theme.card, color: theme.text, border: `1px solid ${theme.border}` }}>
+                    <div key={item._id} style={{ ...productCard, background: theme.card, color: theme.text, border: `1px solid ${theme.border}` }}>
                       <img src={item.image} alt={item.name} style={{ width: "100%", height: 140, objectFit: "cover", borderRadius: 10, marginBottom: 10 }} />
                       <h3 style={{ margin: "0 0 4px" }}>{item.name}</h3>
                       <p style={{ fontWeight: "bold", color: "#4caf50", margin: "6px 0 12px" }}>₹{item.price}</p>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={() => addToCart(item)} style={{ ...btnGreen, flex: 1 }}>🛒 Add to Cart</button>
-                        <button onClick={() => removeWishlist(item.id)} style={{ ...btnRed, padding: "8px 10px" }}>🗑</button>
+                        <button onClick={() => removeWishlist(item._id)} style={{ ...btnRed, padding: "8px 10px" }}>🗑</button>
                       </div>
                     </div>
                   ))}
@@ -447,7 +446,6 @@ export default function App() {
             </>
           )}
 
-          {/* ORDERS PAGE */}
           {page === "orders" && (
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
@@ -460,17 +458,17 @@ export default function App() {
                   <p>No orders yet</p>
                 </div>
               ) : (
-                [...orders].reverse().map((order) => (
-                  <div key={order.id} style={{ background: theme.card, border: `1px solid ${theme.border}`, padding: 20, marginBottom: 16, borderRadius: 12 }}>
+                [...orders].reverse().map((order, index) => (
+                  <div key={order.id || index} style={{ background: theme.card, border: `1px solid ${theme.border}`, padding: 20, marginBottom: 16, borderRadius: 12 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                       <div>
                         <p style={{ margin: 0, fontWeight: "bold", fontSize: 15 }}>📅 {order.date}</p>
                         <p style={{ margin: "4px 0 0", fontSize: 12, color: theme.subtext }}>Payment: {order.paymentId === "COD" ? "💵 Cash on Delivery" : `✅ ${order.paymentId}`}</p>
                       </div>
-                      <span style={{ background: "#e8f5e9", color: "#2e7d32", padding: "4px 14px", borderRadius: 20, fontWeight: "bold", fontSize: 13, height: "fit-content" }}>✅ Delivered</span>
+                      <span style={{ background: "#e8f5e9", color: "#2e7d32", padding: "4px 14px", borderRadius: 20, fontWeight: "bold", fontSize: 13 }}>✅ Delivered</span>
                     </div>
-                    {order.items.map((item) => (
-                      <div key={item.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${theme.border}` }}>
+                    {order.items.map((item, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${theme.border}` }}>
                         <span>{item.name} × {item.quantity}</span>
                         <span style={{ fontWeight: "bold" }}>₹{item.price * item.quantity}</span>
                       </div>
@@ -485,7 +483,6 @@ export default function App() {
             </>
           )}
 
-          {/* ADMIN PAGE */}
           {page === "admin" && user.isAdmin && (
             <Admin products={products} setProducts={setProducts} darkMode={darkMode} />
           )}
@@ -498,17 +495,13 @@ export default function App() {
         </>
       )}
 
-      {/* RAZORPAY MODAL */}
       {showRazorpay && (
-        <RazorpayModal total={total} user={user} onSuccess={(paymentId) => handleBuyNow(paymentId)} onClose={() => setShowRazorpay(false)} />
+        <RazorpayModal total={total} onSuccess={(paymentId) => handleBuyNow(paymentId)} onClose={() => setShowRazorpay(false)} />
       )}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// SHARED STYLES
-// ─────────────────────────────────────────────
 const inputStyle = { display: "block", width: "100%", padding: "10px 14px", marginBottom: 12, borderRadius: 8, border: "1px solid #ccd0e0", fontSize: 14, boxSizing: "border-box", outline: "none" };
 const formCard = { background: "#fff", padding: 24, borderRadius: 14, boxShadow: "0 4px 20px rgba(0,0,0,0.08)" };
 const productCard = { padding: 16, borderRadius: 14, width: 210, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", transition: "0.2s" };
