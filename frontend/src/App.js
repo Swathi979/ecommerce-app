@@ -3,6 +3,16 @@ import axios from "axios";
 
 const BASE_URL = "https://ecommerce-app-production-1ff5.up.railway.app";
 
+const DEFAULT_PRODUCTS = [
+  { _id: "1", name: "Shoes", price: 1200, description: "Comfortable everyday shoes", image: "https://5.imimg.com/data5/SELLER/Default/2023/7/323356025/UR/EQ/WS/192140499/safeimagekit-resized-img-3--500x500.png" },
+  { _id: "2", name: "Running Shoes", price: 1800, description: "High performance running shoes", image: "https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg" },
+  { _id: "3", name: "Casual Sneakers", price: 999, description: "Lightweight casual sneakers", image: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg" },
+  { _id: "4", name: "Backpack", price: 2500, description: "Durable travel backpack", image: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg" },
+  { _id: "5", name: "T-Shirt", price: 499, description: "Cotton casual t-shirt", image: "https://images.pexels.com/photos/1656684/pexels-photo-1656684.jpeg" },
+  { _id: "6", name: "Watch", price: 3500, description: "Stylish analog watch", image: "https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg" },
+  { _id: "7", name: "Headphones", price: 2999, description: "Wireless bluetooth headphones", image: "https://images.pexels.com/photos/3394650/pexels-photo-3394650.jpeg" },
+];
+
 function Login({ setUser }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,10 +49,7 @@ function Register() {
   const handleRegister = async () => {
     if (!name || !email || !password) { setMsg("⚠️ All fields required"); return; }
     try {
-      await axios.post(`${BASE_URL}/register`, {
-        name, email, password,
-        isAdmin: email === "admin@store.com",
-      });
+      await axios.post(`${BASE_URL}/register`, { name, email, password, isAdmin: email === "admin@store.com" });
       setMsg("✅ Registered! You can now login.");
       setName(""); setEmail(""); setPassword("");
     } catch (err) {
@@ -53,9 +60,7 @@ function Register() {
   return (
     <div style={{ ...formCard, marginTop: 20, background: "#f0f8ff" }}>
       <h2 style={{ marginBottom: 16, color: "#1a1a2e" }}>📝 Register</h2>
-      <p style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
-        💡 Use <strong>admin@store.com</strong> to get Admin access
-      </p>
+      <p style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>💡 Use <strong>admin@store.com</strong> to get Admin access</p>
       <input style={inputStyle} placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
       <input style={inputStyle} placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input style={inputStyle} placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -79,8 +84,7 @@ function Admin({ products, setProducts, darkMode }) {
     if (!name || !price) { setMsg("⚠️ Name & Price required"); return; }
     try {
       await axios.post(`${BASE_URL}/products`, {
-        name,
-        price: parseFloat(price),
+        name, price: parseFloat(price),
         image: image || "https://via.placeholder.com/200x150?text=Product",
         description: description || "No description",
       });
@@ -195,7 +199,7 @@ function RazorpayModal({ total, onSuccess, onClose }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -205,12 +209,18 @@ export default function App() {
   const [authTab, setAuthTab] = useState("login");
   const [loading, setLoading] = useState(true);
 
+  // ✅ Backend lekapothe DEFAULT_PRODUCTS show avutayi
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/products`);
-      setProducts(res.data);
+      if (res.data && res.data.length > 0) {
+        setProducts(res.data);
+      } else {
+        setProducts(DEFAULT_PRODUCTS);
+      }
     } catch (err) {
       console.log("Backend error:", err);
+      setProducts(DEFAULT_PRODUCTS);
     } finally {
       setLoading(false);
     }
@@ -278,8 +288,7 @@ export default function App() {
   const handleBuyNow = async (paymentId = null) => {
     const newOrder = {
       userId: user._id || user.email,
-      items: [...cart],
-      total,
+      items: [...cart], total,
       date: new Date().toLocaleString(),
       paymentId: paymentId || "COD",
     };
@@ -353,7 +362,6 @@ export default function App() {
                 <div style={{ textAlign: "center", padding: 40, color: theme.subtext }}>
                   <p style={{ fontSize: 40 }}>🛍️</p>
                   <p>No products found.</p>
-                  {user.isAdmin && <button onClick={() => setPage("admin")} style={btnGreen}>➕ Add Products (Admin)</button>}
                 </div>
               ) : (
                 <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
@@ -483,9 +491,7 @@ export default function App() {
             </>
           )}
 
-          {page === "admin" && user.isAdmin && (
-            <Admin products={products} setProducts={setProducts} darkMode={darkMode} />
-          )}
+          {page === "admin" && user.isAdmin && <Admin products={products} setProducts={setProducts} darkMode={darkMode} />}
           {page === "admin" && !user.isAdmin && (
             <div style={{ textAlign: "center", padding: 60, color: "red" }}>
               <p style={{ fontSize: 48 }}>🚫</p>
