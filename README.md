@@ -225,6 +225,46 @@ Password: 123456
 ```
 
 ---
+🔑 Environment Variables
+
+Create .env file inside backend folder:
+
+MONGO_URI=your_mongodb_connection
+PORT=5000
+RAZORPAY_KEY_ID=your_key
+RAZORPAY_KEY_SECRET=your_secret
+▶ Run Project
+Start Backend
+cd backend
+node server.js
+Start Frontend
+cd frontend
+npm start
+🌍 Deployment
+Frontend
+
+Deployed on Netlify.
+
+Backend
+
+Deployed on Render.
+
+Database
+
+MongoDB Atlas.
+
+📌 Future Improvements
+JWT Authentication
+Protected Admin Routes
+Product Categories
+Image Upload
+Product Search Filters
+Order Tracking
+Email Notifications
+👩‍💻 Author
+A T Swathi
+
+GitHub: https://github.com/Swathi979
 
 Perfect Result ends - Execute _push .... Execute 
  
