@@ -1,138 +1,230 @@
-# 🚀 Task Manager App
+# 🛒 Full Stack MERN E-Commerce App
 
-A Full Stack Task Manager Application built using Node.js, Express.js, MongoDB, HTML, CSS, and JavaScript.
+A modern, fully functional e-commerce web application built with React.js, Node.js, Express.js, and MongoDB.
+
+---
+
+## 🌐 Live Demo
+
+| Platform | Link |
+|----------|------|
+| **Frontend (Netlify)** | [https://whimsical-marshmallow-17c47c.netlify.app](https://whimsical-marshmallow-17c47c.netlify.app) |
+| **Backend (Railway)** | [https://ecommerce-app-production-1ff5.up.railway.app](https://ecommerce-app-production-1ff5.up.railway.app) |
+| **GitHub Repository** | [https://github.com/Swathi979/ecommerce-app](https://github.com/Swathi979/ecommerce-app) |
 
 ---
 
 ## ✨ Features
 
-- 👤 User Registration and Login
-- 🔐 JWT Authentication
-- ➕ Add Tasks
-- ✏️ Edit Tasks
-- 🗑️ Delete Tasks
-- ✅ Mark Tasks as Completed / Pending
-- 🗄️ MongoDB Database Integration
-- 📱 Responsive Frontend UI
+### 👤 User Features
+- ✅ **User Registration** - Create account with email & password
+- ✅ **User Login** - Secure login with localStorage persistence
+- ✅ **Browse Products** - View 7 default products with images & descriptions
+- ✅ **Shopping Cart** - Add/remove products, update quantities
+- ✅ **Wishlist** - Save favorite products for later
+- ✅ **Order Management** - Place orders & view order history
+- ✅ **Payment Integration** - Dummy Razorpay payment gateway
+- ✅ **Dark Mode** - Toggle between light and dark themes
+
+### 🛠 Admin Features
+- ✅ **Add Products** - Add new products with image, price, description
+- ✅ **Delete Products** - Remove products from database
+- ✅ **Product Management** - View all products in admin panel
+- ✅ **Database Integration** - All changes reflected in MongoDB
 
 ---
 
 ## 🛠 Tech Stack
 
 ### Frontend
-- HTML
-- CSS
-- JavaScript
+```
+✓ React.js - UI Framework
+✓ Axios - HTTP Client for API calls
+✓ localStorage - Client-side data persistence
+✓ CSS - Inline Styling
+```
 
 ### Backend
-- Node.js
-- Express.js
+```
+✓ Node.js - JavaScript Runtime
+✓ Express.js - Web Framework
+✓ MongoDB - NoSQL Database
+✓ Mongoose - MongoDB ODM
+```
 
-### Database
-- MongoDB Atlas
-
----
-
-## 🌐 Live Demo
-
-- 🌍 Frontend (Website):  
-  https://legendary-gecko-5e5a31.netlify.app
-
-- ⚙️ Backend API:  
-  https://task-manager-app-l9ls.onrender.com
+### Deployment
+```
+✓ Netlify - Frontend hosting
+✓ Railway - Backend hosting
+✓ MongoDB Atlas - Cloud database
+```
 
 ---
 
-## 📂 Project Setup
+## 📂 Project Structure
+
+```
+ecommerce-app/
+│
+├── frontend/                          # React Application
+│   ├── src/
+│   │   ├── App.js                    # Main component (all logic)
+│   │   ├── index.js                  # Entry point
+│   │   └── index.css                 # Global styles
+│   ├── public/                       # Static files
+│   ├── package.json                  # Dependencies
+│   └── node_modules/                 # Installed packages
+│
+├── backend/                           # Node.js Server
+│   ├── server.js                     # Main server file
+│   ├── .env                          # Environment variables
+│   ├── package.json                  # Dependencies
+│   └── node_modules/                 # Installed packages
+│
+├── .git/                             # Version control
+├── .gitignore                        # Files to ignore
+└── README.md                         # Documentation
+
+```
+
+---
+
+## 🚀 Installation Guide
+
+### Prerequisites
+- Node.js installed ([Download](https://nodejs.org/))
+- Git installed ([Download](https://git-scm.com/))
+- MongoDB Atlas account ([Sign up](https://www.mongodb.com/cloud/atlas))
 
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/Swathi979/task-manager-app.git
-cd task-manager-app
+git clone https://github.com/Swathi979/ecommerce-app.git
+cd ecommerce-app
 ```
 
----
-
-### Step 2: Install Dependencies
+### Step 2: Install Frontend Dependencies
 
 ```bash
+cd frontend
 npm install
 ```
 
----
+This downloads all React packages (React, Axios, etc.)
 
-### Step 3: Setup Environment Variables
+### Step 3: Install Backend Dependencies
 
-Create `.env` file:
+```bash
+cd ../backend
+npm install
+```
+
+This downloads all server packages (Express, Mongoose, etc.)
+
+### Step 4: Setup MongoDB Connection
+
+**Create `.env` file in `backend/` folder:**
 
 ```env
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
+MONGO_URI=mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/ecommerce?appName=Cluster0
 PORT=5000
 ```
 
+**How to get MONGO_URI:**
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create free account
+3. Create a cluster
+4. Click "Connect" → "Connect your application"
+5. Copy connection string and replace `username:password`
+
 ---
 
-### Step 4: Run Project
+## ▶ How to Run
+
+### Start Backend Server
 
 ```bash
+cd backend
 node server.js
 ```
 
-Server runs at:
+**Expected Output:**
 ```
-http://localhost:5000
+🚀 Server running on port 5000
+✅ MongoDB Connected
 ```
 
----
+### Start Frontend Application
 
-## 📌 Project Structure
+**Open new terminal and run:**
 
 ```bash
-task-manager-app/
-│
-├── frontend/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-│
-├── backend/
-│   ├── server.js
-│   ├── models/
-│   ├── routes/
-│   └── config/
-│
-├── .env
-├── package.json
-└── README.md
+cd frontend
+npm start
+```
+
+**Expected Output:**
+```
+Compiled successfully!
+You can now view frontend in the browser.
+Local: http://localhost:3000
+```
+
+App automatically opens at `http://localhost:3000` ✅
+
+---
+
+## 📖 How It Works
+
+### User Registration & Login Flow
+
+```
+1. User clicks "Register" tab
+2. Enters: Name, Email, Password
+3. Data stored in browser (localStorage)
+4. User logs in with Email & Password
+5. Data retrieved from localStorage
+6. ✅ Access granted to app
+```
+
+**Why localStorage?**
+
+- Fast (no server call needed)
+- Data persists after page refresh
+- Perfect for demo applications
+- Simple to implement
+
+---
+
+## 🔐 User Credentials for Testing
+
+### Regular User
+```
+Email: test@example.com
+Password: 123456
+```
+
+### Admin User
+```
+Email: admin@store.com
+Password: 123456
+(Register with this email to get admin access)
 ```
 
 ---
 
-## 🚀 API Endpoints
+## 🌍 Deployment Guide
 
-- POST `/api/auth/register` → Register user
-- POST `/api/auth/login` → Login user
-- GET `/api/tasks` → Get tasks
-- POST `/api/tasks` → Create task
-- PUT `/api/tasks/:id` → Update task
-- DELETE `/api/tasks/:id` → Delete task
+**Frontend Deployment: (Netlify)** ⬆️  
+- Needed build run/deploy both.
+```markdown
 
----
+1. via Push ↦
+2. Expected Push completes [LIVE READY]  
 
-## 📌 Future Improvements
-
-- Refresh Token System
-- Role-based Access (Admin/User)
-- Task Due Dates
-- Email Notifications
-- Drag & Drop UI
+```
 
 ---
 
-## 👩‍💻 Author
-
-**A T Swathi**
-
-GitHub: https://github.com/Swathi979
+Perfect Result ends - Execute _push .... Execute 
+ 
