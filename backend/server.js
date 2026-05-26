@@ -1,23 +1,24 @@
+require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
 
+app.use(cors({ origin: "*" }));
 app.use(express.json());
-app.use(cors());
 
-// ✅ MongoDB Connection (UPDATED FORMAT)
 mongoose
-  .connect("mongodb://127.0.0.1:27017/ecommerce")
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ DB Error:", err));
 
-// ================= SCHEMAS =================
 const UserSchema = new mongoose.Schema({
   name: String,
-  email: String,
+  email: { type: String, unique: true },
   password: String,
+  isAdmin: Boolean,
 });
 
 const ProductSchema = new mongoose.Schema({
@@ -32,83 +33,86 @@ const OrderSchema = new mongoose.Schema({
   items: Array,
   total: Number,
   date: String,
+  paymentId: String,
 });
 
-// ================= MODELS =================
 const User = mongoose.model("User", UserSchema);
 const Product = mongoose.model("Product", ProductSchema);
 const Order = mongoose.model("Order", OrderSchema);
 
-// ================= AUTH ROUTES =================
+app.get("/", (req, res) => res.json({ message: "Backend running!" }));
 
-// REGISTER
 app.post("/register", async (req, res) => {
   try {
-    const user = new User(req.body);
+    const { name, email, password, isAdmin } = req.body;
+    const existing = await User.findOne({ email });
+    if (existing) return res.status(400).json({ message: "Email already registered" });
+    const user = new User({ name, email, password, isAdmin: isAdmin || false });
     await user.save();
-    res.json({ message: "User registered successfully" });
+    res.json({ message: "Registered successfully!" });
   } catch (err) {
-    res.status(500).json(err);
+    console.log("Register error:", err);
+    res.status(500).json({ message: "Register failed" });
   }
 });
 
-// LOGIN
 app.post("/login", async (req, res) => {
   try {
-    const user = await User.findOne({
-      email: req.body.email,
-      password: req.body.password,
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
+    const user = await User.findOne({ email: req.body.email, password: req.body.password });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
     res.json(user);
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ message: "Login failed" });
   }
 });
 
-// ================= PRODUCT ROUTES =================
-
-// GET PRODUCTS
 app.get("/products", async (req, res) => {
-  const products = await Product.find();
-  res.json(products);
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: "Error" });
+  }
 });
 
-// ⭐ ADD PRODUCT (IMPORTANT FOR ADMIN PANEL)
 app.post("/products", async (req, res) => {
   try {
     const product = new Product(req.body);
     await product.save();
-    res.json({ message: "Product added successfully" });
+    res.json({ message: "Product added!" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ message: "Error" });
   }
 });
 
-// ================= ORDER ROUTES =================
+app.delete("/products/:id", async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ message: "Deleted!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error" });
+  }
+});
 
-// PLACE ORDER
 app.post("/order", async (req, res) => {
   try {
     const order = new Order(req.body);
     await order.save();
-    res.json({ message: "Order placed successfully" });
+    res.json({ message: "Order placed!" });
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json({ message: "Error" });
   }
 });
 
-// GET ORDERS BY USER
 app.get("/orders/:userId", async (req, res) => {
-  const orders = await Order.find({ userId: req.params.userId });
-  res.json(orders);
+  try {
+    const orders = await Order.find({ userId: req.params.userId });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: "Error" });
+  }
 });
 
-// ================= SERVER =================
-app.listen(5000, () =>
-  console.log("🚀 Server running on http://localhost:5000")
-);
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log("🚀 Server running on port", PORT));
+
