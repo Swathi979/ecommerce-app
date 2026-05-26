@@ -4,7 +4,7 @@ import axios from "axios";
 const BASE_URL = "https://ecommerce-app-production-1ff5.up.railway.app";
 
 const DEFAULT_PRODUCTS = [
-  { _id: "1", name: "Shoes", price: 1200, description: "Comfortable everyday shoes", image: "https://5.imimg.com/data5/SELLER/Default/2023/7/323356025/UR/EQ/WS/192140499/safeimagekit-resized-img-3--500x500.png" },
+  { _id: "1", name: "Shoes", price: 1200, description: "Comfortable everyday shoes", image: "https://5.imimg.com/data5/SELLER/Default/2023/7/323356025/UR/EQ/WS/192140499/safeimagekit-resized-img-3-500x500.jpg" },
   { _id: "2", name: "Running Shoes", price: 1800, description: "High performance running shoes", image: "https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg" },
   { _id: "3", name: "Casual Sneakers", price: 999, description: "Lightweight casual sneakers", image: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg" },
   { _id: "4", name: "Backpack", price: 2500, description: "Durable travel backpack", image: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg" },
@@ -18,13 +18,14 @@ function Login({ setUser }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = async () => {
-    try {
-      const res = await axios.post(`${BASE_URL}/login`, { email, password });
-      localStorage.setItem("user", JSON.stringify(res.data));
-      setUser(res.data);
+  const handleLogin = () => {
+    const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
+    const found = users.find((u) => u.email === email && u.password === password);
+    if (found) {
+      localStorage.setItem("user", JSON.stringify(found));
+      setUser(found);
       setError("");
-    } catch (err) {
+    } else {
       setError("❌ Invalid credentials. Please register first.");
     }
   };
@@ -46,15 +47,15 @@ function Register() {
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
 
-  const handleRegister = async () => {
+  const handleRegister = () => {
     if (!name || !email || !password) { setMsg("⚠️ All fields required"); return; }
-    try {
-      await axios.post(`${BASE_URL}/register`, { name, email, password, isAdmin: email === "admin@store.com" });
-      setMsg("✅ Registered! You can now login.");
-      setName(""); setEmail(""); setPassword("");
-    } catch (err) {
-      setMsg("❌ " + (err.response?.data?.message || "Error occurred"));
-    }
+    const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
+    if (users.find((u) => u.email === email)) { setMsg("⚠️ Email already registered"); return; }
+    const newUser = { name, email, password, isAdmin: email === "admin@store.com" };
+    users.push(newUser);
+    localStorage.setItem("registeredUsers", JSON.stringify(users));
+    setMsg("✅ Registered! You can now login.");
+    setName(""); setEmail(""); setPassword("");
   };
 
   return (
@@ -162,7 +163,7 @@ function RazorpayModal({ total, onSuccess, onClose }) {
           <h2 style={{ margin: "0 0 16px", color: "#1a1a2e" }}>₹{total}</h2>
           <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
             {["card", "upi", "netbanking"].map((m) => (
-              <button key={m} onClick={() => setMethod(m)} style={{ padding: "6px 14px", borderRadius: 20, border: "2px solid", borderColor: method === m ? "#3399cc" : "#ddd", background: method === m ? "#e8f4fd" : "#fff", color: method === m ? "#3399cc" : "#666", cursor: "pointer", fontSize: 13, fontWeight: method === m ? "bold" : "normal" }}>
+              <button key={m} onClick={() => setMethod(m)} style={{ padding: "6px 14px", borderRadius: 20, border: "2px solid", borderColor: method === m ? "#3399cc" : "#ddd", background: method === m ? "#e6f2f7" : "#fff", cursor: "pointer" }}>
                 {m === "card" ? "💳 Card" : m === "upi" ? "📱 UPI" : "🏦 NetBanking"}
               </button>
             ))}
@@ -209,7 +210,6 @@ export default function App() {
   const [authTab, setAuthTab] = useState("login");
   const [loading, setLoading] = useState(true);
 
-  // ✅ Backend lekapothe DEFAULT_PRODUCTS show avutayi
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`${BASE_URL}/products`);
@@ -311,14 +311,13 @@ export default function App() {
   };
 
   const NavItem = ({ icon, label, count, target }) => (
-    <span onClick={() => setPage(target)} style={{ cursor: "pointer", padding: "8px 14px", borderRadius: 20, background: page === target ? "#3399cc" : "transparent", color: page === target ? "#fff" : theme.text, fontSize: 14, fontWeight: page === target ? "bold" : "normal", transition: "0.2s", whiteSpace: "nowrap" }}>
+    <span onClick={() => setPage(target)} style={{ cursor: "pointer", padding: "8px 14px", borderRadius: 20, background: page === target ? "#3399cc" : "transparent", color: page === target ? "#fff" : "inherit", fontWeight: page === target ? "bold" : "normal" }}>
       {icon} {label} {count !== undefined ? `(${count})` : ""}
     </span>
   );
 
   return (
     <div style={{ background: theme.bg, color: theme.text, minHeight: "100vh", padding: "20px", fontFamily: "'Segoe UI', sans-serif", transition: "0.3s" }}>
-
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 10 }}>
         <h1 style={{ margin: 0, fontSize: 26 }}>🛒 My E-Commerce Store</h1>
         <button onClick={() => setDarkMode(!darkMode)} style={{ ...btnOutline, borderColor: theme.border, color: theme.text, background: theme.card }}>
@@ -329,14 +328,14 @@ export default function App() {
       {!user ? (
         <div style={{ maxWidth: 420, margin: "0 auto" }}>
           <div style={{ display: "flex", marginBottom: 20, borderRadius: 12, overflow: "hidden", border: `2px solid ${theme.border}` }}>
-            <button onClick={() => setAuthTab("login")} style={{ flex: 1, padding: "12px", border: "none", background: authTab === "login" ? "#3399cc" : theme.card, color: authTab === "login" ? "#fff" : theme.text, cursor: "pointer", fontWeight: "bold", fontSize: 15 }}>🔐 Login</button>
-            <button onClick={() => setAuthTab("register")} style={{ flex: 1, padding: "12px", border: "none", background: authTab === "register" ? "#3399cc" : theme.card, color: authTab === "register" ? "#fff" : theme.text, cursor: "pointer", fontWeight: "bold", fontSize: 15 }}>📝 Register</button>
+            <button onClick={() => setAuthTab("login")} style={{ flex: 1, padding: "12px", border: "none", background: authTab === "login" ? "#3399cc" : theme.card, color: authTab === "login" ? "#fff" : theme.text, fontWeight: "bold" }}>Login</button>
+            <button onClick={() => setAuthTab("register")} style={{ flex: 1, padding: "12px", border: "none", background: authTab === "register" ? "#3399cc" : theme.card, color: authTab === "register" ? "#fff" : theme.text, fontWeight: "bold" }}>Register</button>
           </div>
           {authTab === "login" ? <Login setUser={setUser} /> : <Register />}
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12, background: theme.card, padding: "14px 20px", borderRadius: 14, border: `1px solid ${theme.border}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12, background: theme.card, padding: "14px 20px", borderRadius: 12, border: `1px solid ${theme.border}` }}>
             <div>
               <span style={{ fontWeight: "bold", fontSize: 16 }}>👋 Welcome, {user.name}!</span>
               {user.isAdmin && <span style={{ marginLeft: 10, background: "#ff6b35", color: "#fff", padding: "2px 10px", borderRadius: 20, fontSize: 12, fontWeight: "bold" }}>ADMIN</span>}
@@ -355,7 +354,7 @@ export default function App() {
           {page === "products" && (
             <>
               <h2 style={{ marginBottom: 16 }}>🛍️ Products</h2>
-              <input type="text" placeholder="🔍 Search products..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...inputStyle, width: 260, marginBottom: 20, background: theme.input, color: theme.text, border: `1px solid ${theme.border}` }} />
+              <input type="text" placeholder="🔍 Search products..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ ...inputStyle, width: 260, marginBottom: 20, background: theme.input, color: theme.text }} />
               {loading ? (
                 <p style={{ color: theme.subtext }}>⏳ Loading products...</p>
               ) : filteredProducts.length === 0 ? (
@@ -373,7 +372,7 @@ export default function App() {
                       <p style={{ fontWeight: "bold", color: "#4caf50", fontSize: 18, margin: "8px 0" }}>₹{product.price}</p>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={() => addToCart(product)} style={{ ...btnGreen, flex: 1, fontSize: 13 }}>🛒 Add</button>
-                        <button onClick={() => addToWishlist(product)} style={{ background: "#fff0f3", color: "#e91e63", border: "1px solid #f8bbd0", padding: "8px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>❤️</button>
+                        <button onClick={() => addToWishlist(product)} style={{ background: "#fff0f3", color: "#e91e63", border: "1px solid #f8bbd0", padding: "8px 10px", borderRadius: 8, cursor: "pointer" }}>❤️</button>
                       </div>
                     </div>
                   ))}
@@ -397,7 +396,7 @@ export default function App() {
               ) : (
                 <>
                   {cart.map((item) => (
-                    <div key={item._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: theme.card, border: `1px solid ${theme.border}`, padding: 16, marginBottom: 12, borderRadius: 12, flexWrap: "wrap", gap: 12 }}>
+                    <div key={item._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: theme.card, border: `1px solid ${theme.border}`, padding: 16, marginBottom: 12, borderRadius: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                         <img src={item.image} alt={item.name} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 10 }} />
                         <div>
@@ -417,7 +416,7 @@ export default function App() {
                     <h2 style={{ margin: "0 0 16px" }}>Total: ₹{total}</h2>
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                       <button onClick={() => handleBuyNow()} style={{ ...btnBlue, padding: "12px 24px" }}>📦 Cash on Delivery</button>
-                      <button onClick={() => setShowRazorpay(true)} style={{ background: "#3399cc", color: "#fff", border: "none", padding: "12px 24px", borderRadius: 10, cursor: "pointer", fontWeight: "bold", fontSize: 15 }}>💳 Pay with Razorpay</button>
+                      <button onClick={() => setShowRazorpay(true)} style={{ background: "#3399cc", color: "#fff", border: "none", padding: "12px 24px", borderRadius: 10, cursor: "pointer", fontWeight: "bold" }}>💳 Pay with Razorpay</button>
                     </div>
                   </div>
                 </>
