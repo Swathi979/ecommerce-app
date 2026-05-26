@@ -4,7 +4,7 @@ import axios from "axios";
 const BASE_URL = "https://ecommerce-app-production-1ff5.up.railway.app";
 
 const DEFAULT_PRODUCTS = [
-  { _id: "1", name: "Shoes", price: 1200, description: "Comfortable everyday shoes", image: "https://images.pexels.com/photos/1926769/pexels-photo-1926769.jpeg" },
+  { _id: "1", name: "Shoes", price: 1200, description: "Comfortable everyday shoes", image: "https://images.pexels.com/photos/19090/pexels-photo.jpg" },
   { _id: "2", name: "Running Shoes", price: 1800, description: "High performance running shoes", image: "https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg" },
   { _id: "3", name: "Casual Sneakers", price: 999, description: "Lightweight casual sneakers", image: "https://images.pexels.com/photos/1598505/pexels-photo-1598505.jpeg" },
   { _id: "4", name: "Backpack", price: 2500, description: "Durable travel backpack", image: "https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg" },
