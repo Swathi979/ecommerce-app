@@ -254,14 +254,23 @@ Database
 MongoDB Atlas.
 
 📌 Future Improvements
+
 JWT Authentication
+
 Protected Admin Routes
+
 Product Categories
+
 Image Upload
+
 Product Search Filters
+
 Order Tracking
+
 Email Notifications
+
 👩‍💻 Author
+
 A T Swathi
 
 GitHub: https://github.com/Swathi979
